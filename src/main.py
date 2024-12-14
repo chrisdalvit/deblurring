@@ -10,7 +10,8 @@ parser.add_argument("--lr_start", type=float, default=1e-4)
 parser.add_argument("--lr_min", type=float, default=1e-6)
 
 def main():
-    args = parser.parse_args()    
+    args = parser.parse_args()   
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
     test_dataloader = train_dataloader("./data/GOPRO", batch_size=4)
     dda = DDANet(
         in_channels=3,
@@ -18,15 +19,15 @@ def main():
         kernel_size=3,
         sam_groups=8,
         attention_size=3
-    )
+    ).to(device)
     optimizer = torch.optim.Adam(dda.parameters(), lr=args.lr)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, len(test_dataloader), eta_min=args.min_lr)
     dda.train()
     for epoch in range(args.epochs):
         epoch_loss = 0
         for X, y in test_dataloader:
-            outputs = dda(X)
-            loss = loss_fn(outputs, y)
+            outputs = dda(X.to(device))
+            loss = loss_fn(outputs.to(device), y.to(device))
             loss.backward()
             optimizer.step()
             epoch_loss += loss
