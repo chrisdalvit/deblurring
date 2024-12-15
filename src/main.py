@@ -35,7 +35,6 @@ def main():
             loss.backward()
             optimizer.step()
             epoch_loss += loss
-            count += 1
         schedule.step()
         avg_epoch_loss = epoch_loss / len(train_loader)
         print(f"Avg epoch loss: {avg_epoch_loss.item()}")
