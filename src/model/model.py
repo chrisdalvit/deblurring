@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from utils import down_scale
-from .residual import CombinedResidalBlock
+from .residual import ResidualBlock
 
 class DDANet(nn.Module):
 
@@ -11,23 +11,91 @@ class DDANet(nn.Module):
     padding = kernel_size // 2
 
     self.conv_in = nn.Conv2d(in_channels, hid_channels, kernel_size, padding=padding)
-    self.block1 = CombinedResidalBlock(hid_channels, sam_groups, attention_size, kernel_size)
+    self.block1 = nn.Sequential(
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+    )
+    
     self.down1 = nn.Conv2d(hid_channels, hid_channels*2, kernel_size, stride=2, padding=padding)
     self.input1 = nn.Conv2d(in_channels, hid_channels*2, kernel_size, padding=padding)
     self.project1 = nn.Conv2d(hid_channels*4, hid_channels*2, kernel_size, padding=padding)
 
-    self.block2 = CombinedResidalBlock(hid_channels*2, sam_groups, attention_size, kernel_size)
+    self.block2 = nn.Sequential(
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+    )
     self.down2 = nn.Conv2d(hid_channels*2, hid_channels*4, kernel_size, stride=2, padding=padding)
     self.input2 = nn.Conv2d(in_channels, hid_channels*4, kernel_size, padding=padding)
     self.project2 = nn.Conv2d(hid_channels*8, hid_channels*4, kernel_size, padding=padding)
 
-    self.block3 = CombinedResidalBlock(hid_channels*4, sam_groups, attention_size, kernel_size)
-    self.block4 = CombinedResidalBlock(hid_channels*4, sam_groups, attention_size, kernel_size)
+    self.block3 = nn.Sequential(
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+    )
+    self.block4 = nn.Sequential(
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(4*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(4*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(4*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(4*hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
+    )
+    
     self.up1 = nn.ConvTranspose2d(hid_channels*4, hid_channels*2, kernel_size, stride=2, padding=padding, output_padding=padding)
-    self.block5 = CombinedResidalBlock(hid_channels*2, sam_groups, attention_size, kernel_size)
+    self.block5 = nn.Sequential(
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(2*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(2*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(2*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(2*hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
+    )
 
     self.up2 = nn.ConvTranspose2d(hid_channels*2, hid_channels, kernel_size, stride=2, padding=padding, output_padding=padding)
-    self.block6 = CombinedResidalBlock(hid_channels, sam_groups, attention_size, kernel_size)
+    self.block6 = nn.Sequential(
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
+        ResidualBlock(hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
+        ResidualBlock(hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
+    )
     self.conv_out1 = nn.Conv2d(hid_channels, in_channels, kernel_size, padding=padding)
     self.conv_out2 = nn.Conv2d(hid_channels*2, in_channels, kernel_size, padding=padding)
     self.conv_out3 = nn.Conv2d(hid_channels*4, in_channels, kernel_size, padding=padding)
