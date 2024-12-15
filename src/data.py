@@ -8,7 +8,7 @@ from utils import get_transforms
 # Copied from MIMO-UNet implementation: https://github.com/chosj95/MIMO-UNet/blob/main/data/data_load.py
 #
 
-def train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
+def get_train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
     image_dir = os.path.join(path, 'train')
 
     transform = None
@@ -21,6 +21,18 @@ def train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
         num_workers=num_workers,
         pin_memory=True
     )
+    return dataloader
+
+def get_test_dataloader(path, batch_size=1, num_workers=0):
+    image_dir = os.path.join(path, 'test')
+    dataloader = DataLoader(
+        DeblurDataset(image_dir, is_test=True),
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=True
+    )
+
     return dataloader
 
 class DeblurDataset(Dataset):
