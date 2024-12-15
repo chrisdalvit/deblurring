@@ -20,16 +20,21 @@ def main():
         sam_groups=8,
         attention_size=3
     ).to(device)
-    optimizer = torch.optim.Adam(dda.parameters(), lr=args.lr)
-    schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, len(test_dataloader), eta_min=args.min_lr)
+    optimizer = torch.optim.Adam(dda.parameters(), lr=args.lr_start)
+    schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, len(test_dataloader), eta_min=args.lr_min)
     dda.train()
     for epoch in range(args.epochs):
         epoch_loss = 0
         for X, y in test_dataloader:
             outputs = dda(X.to(device))
-            loss = loss_fn(outputs.to(device), y.to(device))
+            outputs = tuple(x.to(device) for x in outputs)
+            loss = loss_fn(outputs, y.to(device))
             loss.backward()
             optimizer.step()
             epoch_loss += loss
         schedule.step()
-        print(loss / len(test_dataloader))
+        avg_epoch_loss = epoch_loss / len(test_dataloader)
+        print(f"Avg epoch loss: {avg_epoch_loss.item()}")
+        
+if __name__ == "__main__":
+    main()
