@@ -1,21 +1,22 @@
 import argparse
 import torch
 import numpy as np
+from tqdm import tqdm
 from model import DDANet
 from utils import loss_fn
 from data import get_train_dataloader, get_test_dataloader
 from skimage.metrics import peak_signal_noise_ratio
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--epochs", type=int)
+parser.add_argument("--epochs", type=int, required=True)
 parser.add_argument("--lr_start", type=float, default=1e-4)
 parser.add_argument("--lr_min", type=float, default=1e-6)
 
 def main():
     args = parser.parse_args()   
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
-    train_loader = get_train_dataloader("./data/GOPRO", batch_size=64)
-    test_loader = get_test_dataloader("./data/GOPRO", batch_size=64, num_workers=0)
+    train_loader = get_train_dataloader("./data/GOPRO", batch_size=4)
+    test_loader = get_test_dataloader("./data/GOPRO", batch_size=1, num_workers=0)
     dda = DDANet(
         in_channels=3,
         hid_channels=32,
@@ -28,7 +29,7 @@ def main():
     dda.train()
     for epoch in range(args.epochs):
         epoch_loss = 0
-        for X, y in train_loader:
+        for X, y in tqdm(train_loader):
             optimizer.zero_grad()
             outputs = dda(X.to(device))
             outputs = tuple(x.to(device) for x in outputs)
@@ -36,10 +37,10 @@ def main():
             loss.backward()
             optimizer.step()
             epoch_loss += loss
-            print(f"Epoch loss: {loss.item()}")    
+            tqdm.write(f"Epoch loss: {loss.item()}") # TODO: remove this 
         schedule.step()
         avg_epoch_loss = epoch_loss / len(train_loader)
-        print(f"Avg epoch loss: {avg_epoch_loss.item()}")
+        print(f"Avg train loss: {avg_epoch_loss.item()}")
         
     with torch.no_grad():
         dda.eval()
@@ -51,7 +52,7 @@ def main():
             labels = y.cpu().numpy()
             psnr = peak_signal_noise_ratio(labels, preds, data_range=1) 
             psnrs.append(psnr)
-            break
+            break # TODO: remove this in final version
         print('The average PSNR is %.2f dB' % (np.mean(psnrs)))
 
         
