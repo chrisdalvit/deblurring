@@ -14,8 +14,8 @@ parser.add_argument("--lr_min", type=float, default=1e-6)
 def main():
     args = parser.parse_args()   
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
-    train_loader = get_train_dataloader("./data/GOPRO", batch_size=4)
-    test_loader = get_test_dataloader("./data/GOPRO", batch_size=1, num_workers=0)
+    train_loader = get_train_dataloader("./data/GOPRO", batch_size=64)
+    test_loader = get_test_dataloader("./data/GOPRO", batch_size=64, num_workers=0)
     dda = DDANet(
         in_channels=3,
         hid_channels=32,
@@ -29,12 +29,14 @@ def main():
     for epoch in range(args.epochs):
         epoch_loss = 0
         for X, y in train_loader:
+            optimizer.zero_grad()
             outputs = dda(X.to(device))
             outputs = tuple(x.to(device) for x in outputs)
             loss = loss_fn(outputs, y.to(device))
             loss.backward()
             optimizer.step()
             epoch_loss += loss
+            print(f"Epoch loss: {loss.item()}")    
         schedule.step()
         avg_epoch_loss = epoch_loss / len(train_loader)
         print(f"Avg epoch loss: {avg_epoch_loss.item()}")
