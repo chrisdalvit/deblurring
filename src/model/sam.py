@@ -21,12 +21,11 @@ class SAM(nn.Module):
     W = self.tanh(self.conv1(means)).view(batch, self.groups, self.attention_size, self.attention_size)
 
     group_convs = []
+    group_size = channels // self.groups
     for Xi, Wi in zip(input, W):
-      group_size = channels // self.groups
-      for idx, kernel in enumerate(Wi):
-        group = Xi[idx*group_size:idx*group_size+group_size,:]
-        y = kernel.repeat(group_size, group_size, 1, 1)
-        attention = F.conv2d(group, y, padding=1)
+        kernels = torch.cat([kernel.repeat(group_size, group_size, 1, 1) for kernel in Wi], dim=0)  # Precompute all kernels
+        attention = F.conv2d(Xi, kernels, padding=1, groups=self.groups)  # Batched convolution
         group_convs.append(attention)
-    S = torch.cat(group_convs).view_as(input)
+
+    S = torch.cat(group_convs, dim=0).view_as(input)
     return self.conv2(S)
