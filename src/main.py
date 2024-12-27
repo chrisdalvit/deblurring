@@ -1,7 +1,7 @@
 import argparse
+import time
 import torch
 import numpy as np
-from tqdm import tqdm
 from model import DDANet
 from utils import loss_fn
 from data import get_train_dataloader, get_test_dataloader
@@ -11,8 +11,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--epochs", type=int, required=True)
 parser.add_argument("--lr_start", type=float, default=1e-4)
 parser.add_argument("--lr_min", type=float, default=1e-6)
+parser.add_argument("--save", action='store_true')
 
 def main():
+    start = time.time()
     args = parser.parse_args()   
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
     train_loader = get_train_dataloader("./data/GOPRO", batch_size=4)
@@ -29,7 +31,7 @@ def main():
     dda.train()
     for epoch in range(args.epochs):
         epoch_loss = 0
-        for X, y in tqdm(train_loader):
+        for X, y in train_loader:
             optimizer.zero_grad()
             outputs = dda(X.to(device))
             outputs = tuple(x.to(device) for x in outputs)
@@ -37,7 +39,6 @@ def main():
             loss.backward()
             optimizer.step()
             epoch_loss += loss
-            tqdm.write(f"Epoch loss: {loss.item()}") # TODO: remove this 
         schedule.step()
         avg_epoch_loss = epoch_loss / len(train_loader)
         print(f"Avg train loss: {avg_epoch_loss.item()}")
@@ -52,9 +53,18 @@ def main():
             labels = y.cpu().numpy()
             psnr = peak_signal_noise_ratio(labels, preds, data_range=1) 
             psnrs.append(psnr)
-            break # TODO: remove this in final version
         print('The average PSNR is %.2f dB' % (np.mean(psnrs)))
-
+    end = time.time()
+    print(f"Duration: {(end-start) / 60 } minutes")
+    
+    if args.save:
+        torch.save({
+            'epoch': args.epochs,
+            'model_state_dict': dda.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            }, "model.pt"
+        )
         
 if __name__ == "__main__":
     main()
