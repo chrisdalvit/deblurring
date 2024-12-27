@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from utils import down_scale
 from .residual import ResidualBlock
+from .scm import SCM
 
 class DDANet(nn.Module):
 
@@ -13,87 +14,39 @@ class DDANet(nn.Module):
     self.conv_in = nn.Conv2d(in_channels, hid_channels, kernel_size, padding=padding)
     self.block1 = nn.Sequential(
         ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
+        ResidualBlock(hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
     )
     
     self.down1 = nn.Conv2d(hid_channels, hid_channels*2, kernel_size, stride=2, padding=padding)
-    self.input1 = nn.Conv2d(in_channels, hid_channels*2, kernel_size, padding=padding)
+    self.input1 = SCM(hid_channels*2)
     self.project1 = nn.Conv2d(hid_channels*4, hid_channels*2, kernel_size, padding=padding)
 
     self.block2 = nn.Sequential(
         ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
+        ResidualBlock(2*hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
     )
     self.down2 = nn.Conv2d(hid_channels*2, hid_channels*4, kernel_size, stride=2, padding=padding)
-    self.input2 = nn.Conv2d(in_channels, hid_channels*4, kernel_size, padding=padding)
+    self.input2 = SCM(hid_channels*4)
     self.project2 = nn.Conv2d(hid_channels*8, hid_channels*4, kernel_size, padding=padding)
 
     self.block3 = nn.Sequential(
         ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
+        ResidualBlock(4*hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
     )
     self.block4 = nn.Sequential(
         ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size),
-        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(4*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(4*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
-        ResidualBlock(4*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
-        ResidualBlock(4*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
         ResidualBlock(4*hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
     )
     
     self.up1 = nn.ConvTranspose2d(hid_channels*4, hid_channels*2, kernel_size, stride=2, padding=padding, output_padding=padding)
     self.block5 = nn.Sequential(
         ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size),
-        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(2*hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(2*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
-        ResidualBlock(2*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
-        ResidualBlock(2*hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
         ResidualBlock(2*hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
     )
 
     self.up2 = nn.ConvTranspose2d(hid_channels*2, hid_channels, kernel_size, stride=2, padding=padding, output_padding=padding)
     self.block6 = nn.Sequential(
         ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size),
-        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(hid_channels, kernel_size, use_fam_global=True),
-        ResidualBlock(hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
-        ResidualBlock(hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
-        ResidualBlock(hid_channels, kernel_size, use_fam_local=True, use_fam_global=True),
         ResidualBlock(hid_channels, kernel_size, use_sam=True, use_fam_local=True, use_fam_global=True),
     )
     self.conv_out1 = nn.Conv2d(hid_channels, in_channels, kernel_size, padding=padding)
@@ -105,7 +58,8 @@ class DDANet(nn.Module):
 
     # Encoder
     skip1 = self.block1(self.conv_in(X))
-    input1 = self.project1(torch.concat((self.input1(X_2), self.down1(skip1)), dim=1))
+    i1 = torch.concat((self.input1(X_2), self.down1(skip1)), dim=1)
+    input1 = self.project1(i1)
     skip2 = self.block2(input1)
 
     input2 = self.project2(torch.concat((self.input2(X_4), self.down2(skip2)), dim=1))
