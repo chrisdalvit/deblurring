@@ -22,8 +22,7 @@ def main():
     test_loader = get_test_dataloader("./data/GOPRO", batch_size=1, num_workers=0)
     dda = DDANet(
         in_channels=3,
-        hid_channels=32,
-        kernel_size=3
+        hid_channels=32
     ).to(device)
     optimizer = torch.optim.Adam(dda.parameters(), lr=args.lr_start)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, len(train_loader), eta_min=args.lr_min)
@@ -38,6 +37,7 @@ def main():
             loss.backward()
             optimizer.step()
             epoch_loss += loss
+            exit()
         schedule.step()
         avg_epoch_loss = epoch_loss / len(train_loader)
         print(f"Avg train loss: {avg_epoch_loss.item()}")
