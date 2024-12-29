@@ -9,6 +9,7 @@ from skimage.metrics import peak_signal_noise_ratio
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epochs", type=int, required=True)
+parser.add_argument("--name", type=str, required=True)
 parser.add_argument("--lr_start", type=float, default=1e-4)
 parser.add_argument("--lr_min", type=float, default=1e-6)
 parser.add_argument("--save", action='store_true')
@@ -22,9 +23,7 @@ def main():
     dda = DDANet(
         in_channels=3,
         hid_channels=32,
-        kernel_size=3,
-        sam_groups=8,
-        attention_size=3
+        kernel_size=3
     ).to(device)
     optimizer = torch.optim.Adam(dda.parameters(), lr=args.lr_start)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, len(train_loader), eta_min=args.lr_min)
@@ -63,7 +62,7 @@ def main():
             'model_state_dict': dda.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
-            }, "model.pt"
+            }, f"{args.name}.pt"
         )
         
 if __name__ == "__main__":
